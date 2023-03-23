@@ -1,0 +1,38 @@
+{
+    "allowedReferrers": [
+        "*"
+    ],
+    "tokenCacheMinutes": 29,
+  "serverUrls": [
+    {
+      "url": "https://arcgisserver.yourdomain.com/webapdater/",
+      "domain": "yourdomain",
+      "username": "username",
+      "password": "password"
+    },
+    {
+      "url": "https://appserver2.cdg.co.th/arcgis/rest/services/AtlasX/CITY",
+      "domain": "",
+      "username": "portaladmin",
+      "password": "portal123"
+    },
+    {
+      "url": "arcgis.com",
+      "clientId": "hqdTXv4ecmFuYRe8",
+      "clientSecret": "34d259e3db414b158c5b0b2826800672",
+      "oauth2Endpoint": "https://www.arcgis.com/sharing/rest/oauth2/token"
+    },
+    {
+      "url": "//sampleserver1.arcgis.com",
+      "domain": "",
+      "username": "",
+      "password": ""
+    },
+    {
+      "url": "//sampleserver6.arcgis.com",
+      "domain": "",
+      "username": "",
+      "password": ""
+    }
+  ]
+}
