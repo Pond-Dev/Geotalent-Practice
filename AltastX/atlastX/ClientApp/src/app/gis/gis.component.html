@@ -1,0 +1,17 @@
+<div class="esri-map" #mapDiv></div>
+<div class="panel">
+  <h3>GIS Functions</h3>
+  <ul>
+    <li *ngFor="let func of gisService.functions">{{ func.FUNCTION_NAME }}</li>
+  </ul>
+
+  <h3>Standard Tools</h3>
+  <ul>
+    <li *ngFor="let func of gisService.standardTools">{{ func.FUNCTION_NAME }}</li>
+  </ul>
+
+  <div>
+    <button *ngIf="!authService.isAuthenticated()" (click)="authService.signIn()">Sign In</button>
+    <button *ngIf="authService.isAuthenticated()" (click)="authService.signOut()">Sign Out</button>
+  </div>
+</div>

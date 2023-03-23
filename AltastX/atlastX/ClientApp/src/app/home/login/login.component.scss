@@ -1,0 +1,84 @@
+app-login {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  form {
+    border-radius: 0.3rem;
+    border: 1px solid #dee2e6;
+    width: 400px;
+
+    .inner-content {
+      padding: 2.25rem 2rem;
+    }
+
+    .logo {
+      display: inline-block;
+      width: 64px;
+      height: 64px;
+      background-image: url('/assets/atlasx-logo.png');
+      background-size: contain;
+    }
+
+    .form-title {
+      margin-top: 0.5rem;
+      font-size: 24px;
+    }
+
+    .form-group-item {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 0.5rem;
+
+      label {
+        padding: 0.5rem;
+      }
+
+      input {
+        padding: 0.25rem 0.5rem;
+        font-size: 24px;
+      }
+    }
+
+    button {
+      margin-top: 1.5rem;
+      padding: 0.5rem 1.5rem;
+      font-size: 16px;
+    }
+  }
+
+  .more {
+    width: 400px;
+    text-align: right;
+    padding: 0.5rem 0;
+    font-size: 0.8rem;
+
+    a {
+      margin-right: 0.75rem;
+    }
+  }
+}
+
+@media (max-width: 575.98px) {
+  app-login {
+    justify-content: space-between;
+    top: 24px;
+
+    form {
+      border-radius: 0;
+      border: none;
+      width: 100%;
+    }
+
+    .more {
+      width: 100%;
+      background-color: rgba($color: lightgray, $alpha: 0.25);
+    }
+  }
+}

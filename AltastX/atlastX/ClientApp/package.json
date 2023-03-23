@@ -1,0 +1,46 @@
+{
+  "name": "client-app",
+  "version": "0.0.0",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "format:check": "prettier --check 'src/{app,environents}/**/*{.ts,.html,.scss}'",
+    "format:write": "prettier --write 'src/{app,environents}/**/*{.ts,.html,.scss}'"
+  },
+  "private": true,
+  "dependencies": {
+    "@angular/animations": "^14.2.12",
+    "@angular/common": "^14.2.12",
+    "@angular/compiler": "^14.2.12",
+    "@angular/core": "^14.2.12",
+    "@angular/forms": "^14.2.12",
+    "@angular/platform-browser": "^14.2.12",
+    "@angular/platform-browser-dynamic": "^14.2.12",
+    "@angular/router": "^14.2.12",
+    "@arcgis/core": "^4.25.0",
+    "@atlasx/core": "^3.0.0",
+    "@openid/appauth": "^1.3.0",
+    "crypto-js": "^4.0.0",
+    "rxjs": "~6.6.0",
+    "tslib": "^2.0.0",
+    "zone.js": "~0.11.4"
+  },
+  "devDependencies": {
+    "@angular-devkit/build-angular": "^14.2.10",
+    "@angular/cli": "^14.2.10",
+    "@angular/compiler-cli": "^14.2.12",
+    "@types/jasmine": "^3.6.11",
+    "@types/node": "^14.14.31",
+    "jasmine-core": "~3.10.0",
+    "karma": "~6.3.4",
+    "karma-chrome-launcher": "~3.1.0",
+    "karma-coverage": "~2.0.3",
+    "karma-jasmine": "~4.0.0",
+    "karma-jasmine-html-reporter": "^1.5.0",
+    "prettier": "^2.8.1",
+    "typescript": "~4.6.4"
+  }
+}
