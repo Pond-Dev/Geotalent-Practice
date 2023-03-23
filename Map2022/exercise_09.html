@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="initial-scale=1,maximum-scale=1,user-scalable=no"
+        />
+        <title>Secured Layer</title>
+        <style>
+            html,
+            body,
+            #divView {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+                width: 100%;
+                float: left;
+            }
+        </style>
+
+        <link
+            rel="stylesheet"
+            href="https://js.arcgis.com/4.24/esri/css/main.css"
+        />
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+        <script src="https://js.arcgis.com/4.24/"></script>
+
+        <script>
+            require([
+                "esri/Map",
+                "esri/views/MapView",
+                "esri/layers/MapImageLayer",
+                "esri/identity/IdentityManager",
+                "esri/identity/ServerInfo",
+            ], function (
+                Map,
+                MapView,
+                MapImageLayer,
+                IdentityManager,
+                ServerInfo
+            ) {
+                $(document).ready(function () {
+                    let expireTokenDuration = 720000;
+
+                    requestToken();
+                    function requestToken() {
+                        //todo
+                        const serverInfo = new ServerInfo({
+                            tokenServiceUrl:
+                                "https://dttservicearea.nbtc.go.th/arcgis/tokens/generateToken",
+                            hasServer: true,
+                            shortLivedTokenValidity: 60,
+                        });
+                        IdentityManager.generateToken(serverInfo, {
+                            username: "nbtcuser",
+                            password: "P@ssw0rd",
+                        }).then((response) => {
+                            IdentityManager.registerToken({
+                                server: "https://dttservicearea.nbtc.go.th/arcgis/rest/services",
+                                token: response.token,
+                                expires: response.expires,
+                            });
+                            initializeMap();
+                        });
+                    }
+
+                    function initializeMap() {
+                        try {
+                            let map = new Map({
+                                basemap: "dark-gray-vector",
+                            });
+
+                            var divContainerId = "divView";
+                            var mapView = new MapView({
+                                container: divContainerId,
+                                map: map,
+                                zoom: 6,
+                                center: [100.53830040740806, 13.76490802768823], // longitude, latitude
+                            });
+
+                            var mapSecure = new MapImageLayer({
+                                id: "mapSecure1",
+                                url: "https://dttservicearea.nbtc.go.th/arcgis/rest/services/DTT/nbtc_map_v2/MapServer",
+                                sublayers: [
+                                    {
+                                        id: 0,
+                                        visible: true,
+                                    },
+                                ],
+                            });
+                            map.add(mapSecure);
+                        } catch (ex) {
+                            console.log(ex);
+                        }
+                    }
+                });
+            });
+        </script>
+    </head>
+
+    <body>
+        <div id="divView"></div>
+    </body>
+</html>

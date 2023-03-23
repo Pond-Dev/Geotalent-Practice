@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="initial-scale=1,maximum-scale=1,user-scalable=no"
+        />
+        <title>Map & View</title>
+        <style>
+            html,
+            body,
+            #divView {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+                width: 100%;
+            }
+            #myButton {
+                z-index: 100;
+                position: absolute;
+                left: 100px;
+                top: 10px;
+                width: 50px;
+                height: 50px;
+                cursor: pointer;
+            }
+        </style>
+
+        <link
+            rel="stylesheet"
+            href="https://js.arcgis.com/4.24/esri/css/main.css"
+        />
+        <script src="https://js.arcgis.com/4.24/"></script>
+        <script>
+            require([
+                "esri/Map",
+                "esri/views/MapView",
+                "esri/views/SceneView",
+            ], (Map, MapView, SceneView) => {
+                let map = new Map({ basemap: "streets-navigation-vector" });
+
+                const divContainerID = "divView";
+
+                const mapView = new MapView({
+                    container: divContainerID,
+                    map: map,
+                    zoom: 6,
+                    center: [100.53100560889558, 13.72248493948604],
+                });
+
+                const sceneView = new SceneView({
+                    container: null,
+                    map: map,
+                });
+
+                var is2D = true;
+                var activeView = mapView;
+
+                const onClick = () => {
+                    if (is2D) {
+                        //switch 3D
+                        sceneView.viewpoint = activeView.viewpoint.clone();
+                        activeView.container = null;
+                        activeView = sceneView;
+                        document.getElementById("myButton").innerHTML = "3D";
+                    } else {
+                        //switch 2D
+                        mapView.viewpoint = activeView.viewpoint.clone();
+                        activeView.container = null;
+                        activeView = mapView;
+                        document.getElementById("myButton").innerHTML = "2D";
+                    }
+
+                    activeView.container = divContainerID;
+                    is2D = !is2D;
+                    try {
+                    } catch (ex) {
+                        console.log(ex);
+                    }
+                };
+                document.getElementById("myButton").onclick = onClick;
+            });
+        </script>
+    </head>
+
+    <body>
+        <div id="divView">
+            <button id="myButton">2D</button>
+        </div>
+    </body>
+</html>

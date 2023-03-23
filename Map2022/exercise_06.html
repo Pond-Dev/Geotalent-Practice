@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="initial-scale=1,maximum-scale=1,user-scalable=no"
+        />
+        <title>Identify</title>
+        <style>
+            html,
+            body,
+            #divView {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+                width: 100%;
+                float: left;
+            }
+        </style>
+
+        <link
+            rel="stylesheet"
+            href="https://js.arcgis.com/4.24/esri/css/main.css"
+        />
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+        <script src="https://js.arcgis.com/4.24/"></script>
+
+        <script>
+            require([
+                "esri/Map",
+                "esri/views/MapView",
+                "esri/layers/MapImageLayer",
+                "esri/rest/identify",
+                "esri/rest/support/IdentifyParameters",
+                "dojo/dom",
+                "dojo/on",
+                "dojo/domReady!",
+            ], function (
+                Map,
+                MapView,
+
+                MapImageLayer,
+                identify,
+                IdentifyParameters,
+                dom,
+                on
+            ) {
+                var map = new Map({
+                    basemap: "topo-vector",
+                    ground: "world-elevation",
+                });
+
+                var divContainerId = "divView";
+
+                var mapView = new MapView({
+                    container: divContainerId,
+                    map: map,
+                    zoom: 18,
+                    center: [100.5433989, 13.7029924],
+                });
+
+                var mapUrl =
+                    "https://appserver2.cdg.co.th/arcgis/rest/services/AtlasX/City/MapServer";
+                var mapImageLayer2 = new MapImageLayer({
+                    id: "dyn1",
+                    url: mapUrl,
+                });
+
+                map.add(mapImageLayer2);
+                const identifyParams = new IdentifyParameters({
+                    tolerance: 20,
+                    layerIds: [0, 1],
+                    layerOption: "all",
+                    width: mapView.width,
+                    height: mapView.height,
+                });
+                on(mapView, "click", function (evt) {
+                    identifyParams.geometry = evt.mapPoint;
+                    identifyParams.mapExtent = mapView.extent;
+
+                    identify
+                        .identify(mapUrl, identifyParams)
+                        .then((response) => {
+                            const results = response.results;
+                            if (results.length > 0) {
+                                const featurePopups = [];
+
+                                results.forEach((resultItem) => {
+                                    const { attributes } = resultItem.feature;
+                                    if (resultItem.layerId === 1) {
+                                        // อาคาร
+                                        const content =
+                                            `<b>OBJECTID : </b>` +
+                                            attributes.OBJECTID +
+                                            `<br/>` +
+                                            `<b>ชื่ออาคาร : </b>` +
+                                            attributes.NAME +
+                                            `<br/>` +
+                                            `<b>ความสูงของอาคาร : </b>` +
+                                            attributes.HEIGHT +
+                                            `<br/>` +
+                                            `<b>จำนวนชั้น : </b>` +
+                                            attributes.FLOOR;
+
+                                        resultItem.feature.popupTemplate = {
+                                            title: attributes.NAME,
+                                            content: content,
+                                        };
+                                    } else {
+                                        //ร้านค้า
+                                        const content =
+                                            `<b>OBJECTID : </b>` +
+                                            attributes.OBJECTID +
+                                            `<br/>` +
+                                            `<b>ชื่อร้านค้า : </b>` +
+                                            attributes.SHOP_NAME;
+                                        resultItem.feature.popupTemplate = {
+                                            title: attributes.SHOP_NAME,
+                                            content: content,
+                                        };
+                                    }
+                                    featurePopups.push(resultItem.feature);
+                                });
+                                mapView.popup.open({
+                                    features: featurePopups,
+                                    location: evt.mapPoint,
+                                });
+                            }
+                        });
+                    // console.log(evt.mapPoint.latitude);
+                    // console.log(evt.mapPoint.longitude);
+                });
+            });
+        </script>
+    </head>
+
+    <body>
+        <div id="divView"></div>
+    </body>
+</html>

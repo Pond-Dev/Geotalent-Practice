@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="initial-scale=1,maximum-scale=1,user-scalable=no"
+        />
+        <title>Geometry & Zoom</title>
+        <style>
+            html,
+            body,
+            #divView {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+                width: 100%;
+                float: left;
+            }
+
+            #divPanel {
+                width: 20%;
+                position: absolute;
+                z-index: 20px;
+                height: 100%;
+                background-color: white;
+            }
+        </style>
+
+        <link
+            rel="stylesheet"
+            href="https://js.arcgis.com/4.24/esri/css/main.css"
+        />
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+        <script src="https://js.arcgis.com/4.24/"></script>
+
+        <script>
+            require([
+                "esri/Map",
+                "esri/views/MapView",
+                "esri/geometry/Point",
+                "esri/geometry/Extent",
+                "dojo/dom",
+                "dojo/on",
+                "dojo/domReady!",
+            ], function (Map, MapView, Point, Extent, dom, on) {
+                var map = new Map({
+                    basemap: "streets",
+                    ground: "world-elevation",
+                });
+
+                var divContainerId = "divView";
+
+                var mapView = new MapView({
+                    container: divContainerId,
+                    map: map,
+                    zoom: 6,
+                    center: [100.53100560889558, 13.72248493948604], // longitude, latitude
+                });
+
+                var btnZoomToPoint = dom.byId("btnZoomToPoint");
+                var btnZoomToExtent = dom.byId("btnZoomToExtent");
+
+                on(btnZoomToPoint, "click", function () {
+                    const lon = parseFloat(
+                        document.getElementById("txtLon").value
+                    );
+                    const lat = parseFloat(
+                        document.getElementById("txtLat").value
+                    );
+                    const zoom = parseInt(
+                        document.getElementById("txtZoom").value
+                    );
+                    // mapView.goTo({
+                    //     center: [lon, lat],
+                    //     zoom: zoom,
+                    // });
+
+                    const myPoint = new Point({
+                        longitude: lon,
+                        latitude: lat,
+                        spatialReference: {
+                            wkid: 4326,
+                        },
+                    });
+
+                    mapView.goTo({
+                        target: myPoint,
+                        zoom: zoom,
+                    });
+                });
+
+                on(btnZoomToExtent, "click", function () {
+                    const LonMin = parseFloat(
+                        document.getElementById("txtLonMin").value
+                    );
+                    const LonMax = parseFloat(
+                        document.getElementById("txtLonMax").value
+                    );
+                    const LatMin = parseFloat(
+                        document.getElementById("txtLatMin").value
+                    );
+                    const LatMax = parseFloat(
+                        document.getElementById("txtLatMax").value
+                    );
+                    const myExtent = new Extent({
+                        xmin: parseFloat(
+                            document.getElementById("txtLonMin").value
+                        ),
+                        xmax: parseFloat(
+                            document.getElementById("txtLonMax").value
+                        ),
+                        ymin: parseFloat(
+                            document.getElementById("txtLatMin").value
+                        ),
+                        ymax: parseFloat(
+                            document.getElementById("txtLatMax").value
+                        ),
+                        spatialReference: {
+                            wkid: 4326,
+                        },
+                    });
+
+                    mapView.goTo({
+                        target: myExtent,
+                    });
+                });
+            });
+        </script>
+    </head>
+
+    <body>
+        <div id="divView"></div>
+        <div id="divPanel">
+            <h2>Zoom to Point</h2>
+            Longitude <input type="text" id="txtLon" value="100" /><br />
+            Latitude <input type="text" id="txtLat" value="13" /> <br />
+            Zoom <input type="text" id="txtZoom" value="6" /> <br />
+            <button id="btnZoomToPoint">Zoom to Point</button>
+
+            <h2>Zoom to Extent</h2>
+            Longitude(Min)
+            <input type="text" id="txtLonMin" value="100" /><br />
+            Longitude(Max)
+            <input type="text" id="txtLonMax" value="101" /><br />
+            Latitude(Min) <input type="text" id="txtLatMin" value="13" /><br />
+            Latitude(Max) <input type="text" id="txtLatMax" value="14" /> <br />
+            <button id="btnZoomToExtent">Zoom to Extent</button>
+        </div>
+    </body>
+</html>

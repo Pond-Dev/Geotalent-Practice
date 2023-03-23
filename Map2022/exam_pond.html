@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="initial-scale=1,maximum-scale=1,user-scalable=no"
+        />
+        <title>Map & View</title>
+        <style>
+            html,
+            body,
+            #divView {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+                width: 100%;
+            }
+            #drawButton {
+                z-index: 100;
+                position: absolute;
+                left: 100px;
+                top: 10px;
+                width: auto;
+                height: auto;
+                cursor: pointer;
+            }
+            #moveButton {
+                z-index: 100;
+                position: absolute;
+                left: 100px;
+                top: 40px;
+                width: auto;
+                height: auto;
+                cursor: pointer;
+            }
+            #pauseButton {
+                z-index: 100;
+                position: absolute;
+                left: 100px;
+                top: 70px;
+                width: auto;
+                height: auto;
+                cursor: pointer;
+            }
+            #resetButton {
+                z-index: 100;
+                position: absolute;
+                left: 100px;
+                top: 100px;
+                width: auto;
+                height: auto;
+                cursor: pointer;
+            }
+            #clearMapButton {
+                z-index: 100;
+                position: absolute;
+                left: 100px;
+                top: 130px;
+                width: auto;
+                height: auto;
+                cursor: pointer;
+            }
+        </style>
+
+        <link
+            rel="stylesheet"
+            href="https://js.arcgis.com/4.24/esri/css/main.css"
+        />
+        <script src="https://js.arcgis.com/4.24/"></script>
+        <script>
+            require([
+                "esri/Map",
+                "esri/views/MapView",
+                "esri/Graphic",
+                "esri/layers/GraphicsLayer",
+                "esri/geometry/Polyline",
+                "dojo/on",
+            ], (Map, MapView, Graphic, GraphicsLayer, Polyline, on) => {
+                let map = new Map({ basemap: "topo-vector" });
+
+                const grpLayerBase = new GraphicsLayer({ id: "grpLayerBase" });
+                const grpLayerGodzilla = new GraphicsLayer({
+                    id: "grpLayerGodzilla",
+                });
+
+                const divContainerID = "divView";
+
+                const mapView = new MapView({
+                    container: divContainerID,
+                    map: map,
+                    zoom: 16,
+                    center: [100.53100560889558, 13.72248493948604],
+                });
+                map.add(grpLayerBase);
+                map.add(grpLayerGodzilla);
+
+                var animationID;
+                var arrPoint = [];
+                var isClickDrawButton = false;
+                var count = 0;
+
+                const drawButton = document.getElementById("drawButton");
+                const moveButton = document.getElementById("moveButton");
+                const pauseButton = document.getElementById("pauseButton");
+                const resetButton = document.getElementById("resetButton");
+                const clearMapButton =
+                    document.getElementById("clearMapButton");
+
+                mapView.on("click", (evt) => {
+                    if (arrPoint.length < 5 && !isClickDrawButton) {
+                        arrPoint.push(evt.mapPoint);
+                        // create pin
+                        const geometryPoint = {
+                            type: "point",
+                            longitude: evt.mapPoint.longitude,
+                            latitude: evt.mapPoint.latitude,
+                        };
+
+                        const markerSymbolPin = {
+                            type: "picture-marker",
+                            url: "https://gdev.geotalent.co.th/finearts/refdoc/images/pin_green.png",
+                            width: "50px",
+                            height: "50px",
+                            yoffset: 20,
+                        };
+
+                        const grpPointPin = new Graphic({
+                            geometry: geometryPoint,
+                            symbol: markerSymbolPin,
+                        });
+
+                        // create number
+                        const markerTextSymbol = {
+                            type: "text",
+                            color: "black",
+                            haloColor: "white",
+                            haloSize: "1px",
+                            text: arrPoint.length,
+                            yoffset: 20,
+                            font: {
+                                size: 16,
+                            },
+                        };
+                        const grpPointText = new Graphic({
+                            geometry: geometryPoint,
+                            symbol: markerTextSymbol,
+                        });
+
+                        grpLayerBase.add(grpPointPin);
+                        grpLayerBase.add(grpPointText);
+
+                        if (arrPoint.length > 1) {
+                            // enable draw button
+                            drawButton.disabled = false;
+                        }
+                    }
+                });
+
+                const drawGodzilla = (mapPoint) => {
+                    if (mapPoint) {
+                        const geometryPoint = {
+                            type: "point",
+                            longitude: mapPoint.longitude,
+                            latitude: mapPoint.latitude,
+                        };
+
+                        const markerSymbolGodzilla = {
+                            type: "picture-marker",
+                            url: "https://gdev.geotalent.co.th/finearts/refdoc/images/godzilla.gif",
+                            width: "60px",
+                            height: "60px",
+                        };
+                        const grpPointGodzilla = new Graphic({
+                            geometry: geometryPoint,
+                            symbol: markerSymbolGodzilla,
+                        });
+                        grpLayerGodzilla.add(grpPointGodzilla);
+                    }
+                };
+
+                const deleteLayerGodzilla = () => {
+                    const grpDrawLayerGodzilla =
+                        map.findLayerById("grpLayerGodzilla");
+                    grpDrawLayerGodzilla.removeAll();
+                };
+                const partialPoint = (arr1, arr2, count) => {
+                    if (arr1 && arr2 && count) {
+                        longitude1 = arr1.longitude;
+                        latitude1 = arr1.latitude;
+                        longitude2 = arr2.longitude;
+                        latitude2 = arr2.latitude;
+
+                        partial = 60;
+                        const newPoint = {
+                            longitude:
+                                ((60 - count) * longitude1) / partial +
+                                (count * longitude2) / partial,
+                            latitude:
+                                ((60 - count) * latitude1) / partial +
+                                (count * latitude2) / partial,
+                        };
+                        drawGodzilla(newPoint);
+                        return newPoint;
+                    }
+                };
+                const animationGodzilla = () => {
+                    animationID = requestAnimationFrame(animationGodzilla);
+
+                    if (count !== (arrPoint.length - 1) * 60) {
+                        deleteLayerGodzilla();
+                    } else if (count === (arrPoint.length - 1) * 60) {
+                    }
+
+                    if (count <= 60) {
+                        partialPoint(arrPoint[0], arrPoint[1], count % 60);
+                    } else if (count > 60 && count <= 120) {
+                        partialPoint(arrPoint[1], arrPoint[2], count % 60);
+                    } else if (count > 120 && count <= 180) {
+                        partialPoint(arrPoint[2], arrPoint[3], count % 60);
+                    } else if (count > 180 && count <= 240) {
+                        partialPoint(arrPoint[3], arrPoint[4], count % 60);
+                    }
+
+                    if (parseInt(count / 60) >= arrPoint.length - 1) {
+                        cancelAnimationFrame(animationID);
+                        moveButton.disabled = true;
+                        pauseButton.disabled = true;
+                        resetButton.disabled = false;
+                        clearMapButton.disabled = false;
+                    }
+
+                    count = count + 1;
+                };
+
+                const onDraw = () => {
+                    const arrPaths = arrPoint.map((point) => [
+                        point.x,
+                        point.y,
+                    ]);
+
+                    const line = new Polyline({
+                        paths: arrPaths,
+                        spatialReference: { wkid: 102100 },
+                    });
+
+                    const roadSymbol = {
+                        type: "simple-line",
+                        color: "red",
+                        width: "4px",
+                        style: "dash",
+                    };
+
+                    const grpRoad = new Graphic({
+                        geometry: line,
+                        symbol: roadSymbol,
+                    });
+
+                    grpLayerBase.add(grpRoad);
+
+                    drawGodzilla(arrPoint[0]);
+
+                    isClickDrawButton = true;
+                    drawButton.disabled = true;
+                    moveButton.disabled = false;
+                    resetButton.disabled = false;
+                };
+
+                const onMove = () => {
+                    animationID = requestAnimationFrame(animationGodzilla);
+                    moveButton.disabled = true;
+                    resetButton.disabled = true;
+                    pauseButton.disabled = false;
+                };
+
+                const onPause = () => {
+                    cancelAnimationFrame(animationID);
+                    moveButton.disabled = false;
+                    resetButton.disabled = false;
+                    pauseButton.disabled = true;
+                    clearMapButton.disabled = false;
+                };
+
+                const onReset = () => {
+                    deleteLayerGodzilla();
+                    drawGodzilla(arrPoint[0]);
+                    cancelAnimationFrame(animationID);
+
+                    count = 0;
+                    moveButton.disabled = false;
+                };
+
+                const onClear = () => {
+                    count = 0;
+                    arrPoint = [];
+                    grpLayerBase.removeAll();
+                    grpLayerGodzilla.removeAll();
+                    drawButton.disabled = true;
+                    moveButton.disabled = true;
+                    pauseButton.disabled = true;
+                    resetButton.disabled = true;
+                    isClickDrawButton = false;
+                    cancelAnimationFrame(animationID);
+                };
+
+                document.getElementById("drawButton").onclick = onDraw;
+                document.getElementById("moveButton").onclick = onMove;
+                document.getElementById("pauseButton").onclick = onPause;
+                document.getElementById("resetButton").onclick = onReset;
+                document.getElementById("clearMapButton").onclick = onClear;
+            });
+        </script>
+    </head>
+
+    <body>
+        <div id="divView">
+            <button id="drawButton" disabled>Draw Routes</button>
+            <button id="moveButton" disabled>Move</button>
+            <button id="pauseButton" disabled>Pause</button>
+            <button id="resetButton" disabled>Reset</button>
+            <button id="clearMapButton">Clear Map</button>
+        </div>
+    </body>
+</html>
