@@ -1,0 +1,13 @@
+version: "3.8"
+
+services:
+  webapp:
+    build:
+      context: ClientApp
+      dockerfile: docker/Dockerfile
+      args:
+        - NPM_TOKEN=${NPM_TOKEN}
+    container_name: webapp
+    ports:
+      - "8080:80"
+    restart: unless-stopped

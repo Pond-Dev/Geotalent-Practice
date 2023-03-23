@@ -1,0 +1,182 @@
+// Jenkinsfile Template – Enable CI/CD pipeline into atlastX Project.
+// Version: 4.0.0
+// Copyright © 2022 AtlasX Developer
+//
+// This template can only be used for projects that are atlastX v4.0.0,
+// which contains web application (Angular) and backend (.NET 6),
+// means that the project contains a directory named ClientApp and ServerApp
+// in the same repository.
+//
+// For more infomation about customization of this template
+// please contact AtlasX team.
+
+pipeline {
+    agent { label 'linux-slave-01' }
+
+    environment {
+        // ----------------------------- JENKINS CONFIGURATIONS -----------------------------
+        SCANNER_HOME = tool 'SonarScanner 4.7'
+        DOTNET_SCANNER_HOME = tool 'SonarScannerDotNet 5'
+        // ---------------------------- END JENKINS CONFIGURATION ---------------------------
+
+
+        // ----------------------------- PROJECT CONFIGURATIONS -----------------------------
+        // Project name (e.g. 'AtlasX Demo')
+        // and use them later to specify which destination directory name for deploy.
+        PROJECT_NAME = ''
+        // Git branch name that contain jenkins file (default: jenkins)
+        PROJECT_BRANCH_NAME = 'jenkins'
+        // Git project url
+        PROJECT_URL = ''
+        // Unique project name (e.g. 'atlastX')
+        // and use them later to specify which project name for SonarQube report.
+        PROJECT_KEY = ''
+        // Project version
+        PROJECT_VERSION = '1.0.0'
+        // --------------------------- END PROJECT CONFIGURATIONS ---------------------------
+
+
+        // ---------------------------- DEPLOYMENT CONFIGURATIONS ---------------------------
+        // Specify IIS API Server URL
+        IIS_API_SERVER_URL = "http://appserv1.cdg.co.th/iis-api-server"
+        // Specify your Application Pool name in IIS.
+        APPLICATION_POOL_NAME = ''
+        // Specify your site name in IIS.
+        APPLICATION_NAME = ''
+        // Angular base href
+        BASE_HREF = ''
+        // --------------------------- END DEPLOYMENT CONFIGURATION -------------------------
+    }
+    stages {
+        // Git checkout to specific branch
+        stage('Checkout') {
+            steps {
+                git branch: "${PROJECT_BRANCH_NAME}",
+                    credentialsId: 'git-user',
+                    url: "${PROJECT_URL}"
+
+                echo 'Checkout complete.'
+            }
+        }
+        // Build web application and backend into artifact
+        stage('Build') {
+            steps {
+                dir('ServerApp') {
+                    dotnetClean sdk: 'dotnet 6'
+                    dotnetPublish sdk: 'dotnet 6', configuration: 'Release', outputDirectory: '../out', runtime: 'win-x64'
+                }
+
+                dir('ClientApp') {
+                    nodejs(nodeJSInstallationName: 'node 14', configId: 'atlasx-npmrc') {
+                        sh 'npm ci'
+                        sh "npm run ng -- build --configuration production --output-path ../out/ClientApp --base-href /${BASE_HREF}/"
+                    }
+                }
+
+                echo 'Build complete.'
+            }
+        }
+        // Analysis source code with SonarScanner for MSBuild and SonarScanner
+        stage('SonarQube analysis') {
+            steps {
+                dir('ServerApp') {
+                    withSonarQubeEnv('SonarQube') {
+                        withDotNet(sdk: 'dotnet 6') {
+                            sh 'dotnet \"${DOTNET_SCANNER_HOME}/SonarScanner.MSBuild.dll\" begin /k:\"${PROJECT_KEY}::WebApp.ServerApp\" /v:\"${PROJECT_VERSION}\"'
+                            sh 'dotnet build'
+                            sh 'dotnet \"${DOTNET_SCANNER_HOME}/SonarScanner.MSBuild.dll\" end'
+                        }
+                    }
+                }
+                dir('ClientApp') {
+                    withSonarQubeEnv('SonarQube') {
+                        nodejs(nodeJSInstallationName: 'node 14', configId: 'atlasx-npmrc') {
+                            sh '\"${SCANNER_HOME}/bin/sonar-scanner\" -Dsonar.projectKey=\"${PROJECT_KEY}::WebApp.ClientApp\" -Dsonar.projectVersion=\"${PROJECT_VERSION}\" -Dsonar.sources=src -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/**,**/reports/**,**/test/**,**/bin/**,**/obj/**,**/packages/**,**/packages-lock.json'
+                        }
+                    }
+                }
+
+                echo 'Scan complete.'
+            }
+        }
+        // Test
+        stage('Test') {
+            steps {
+                // Insert test script here.
+
+                echo 'Test complete.'
+            }
+        }
+        // Deploy web service and web application to Server
+        stage('Deploy') {
+            steps {
+                script {
+                    def accessToken = ""
+                    withCredentials([usernamePassword(credentialsId: 'appserv1-user', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                        def response = sh(script: 'curl -L -X POST \"${IIS_API_SERVER_URL}/api/v1/auth/token\" -H \"Content-Type: application/x-www-form-urlencoded\" --data-urlencode \"grant_type=password\" --data-urlencode \"username=${USERNAME}\" --data-urlencode \"password=${PASSWORD}\" --data-urlencode \"client_id=jenkins-ci\"', returnStdout: true)
+
+                        def responseObj = readJSON text: response
+                        accessToken = responseObj.access_token
+                    }
+
+                    def applicationPool = getApplicationPool(APPLICATION_POOL_NAME, accessToken)
+
+                    if (applicationPool == null) {
+                        echo "No application pool found. Creating new application pool..."
+                        createApplicationPool(APPLICATION_POOL_NAME, accessToken)
+                        def physicalPath = "${env.APPSERV1_DEPLOY_HOME}\\${PROJECT_NAME}\\WebApplication"
+                        createApplication(APPLICATION_NAME, APPLICATION_POOL_NAME, physicalPath, accessToken)
+                    }
+
+                    def applicationPoolState = getApplicationPoolState(APPLICATION_POOL_NAME, accessToken)
+
+                    echo "Current application pool state: ${applicationPoolState}"
+                    if (applicationPoolState == 'Started') {
+                        echo "Stopping application pool..."
+                        setApplicationPoolState(APPLICATION_POOL_NAME, 'Stop', accessToken)
+                    }
+
+                    sh "rm -rf /mnt/appserv1/\"${PROJECT_NAME}\"/WebApplication/ClientApp"
+                    sh "mkdir -p /mnt/appserv1/\"${PROJECT_NAME}\"/WebApplication/ClientApp"
+                    sh "cp -r ./out/* /mnt/appserv1/\"${PROJECT_NAME}\"/WebApplication"
+
+                    echo "Stating application pool."
+                    setApplicationPoolState(APPLICATION_POOL_NAME, 'Start', accessToken)
+                }
+
+                echo 'Deploy complete.'
+            }
+        }
+    }
+}
+
+def getApplicationPool(appPoolName, token) {
+    appPoolName = appPoolName.replace(' ', '%20')
+    def response = sh(script: "curl -L -X GET \"${IIS_API_SERVER_URL}/api/v1/apppools/${appPoolName}\" -H \"Authorization: Bearer ${token}\"", returnStdout: true)
+    def responseObj = readJSON text: response
+    return responseObj.name
+}
+
+def createApplicationPool(appPoolName, token) {
+    sh(script: "curl -L -X POST \"${IIS_API_SERVER_URL}/api/v1/apppools\" -H \"Authorization: Bearer ${token}\" -H \"Content-Type: application/x-www-form-urlencoded\" --data-urlencode \"name=${appPoolName}\"")
+}
+
+def createApplication(appName, appPoolName, physicalPath, token) {
+    sh(script: "curl -L -X POST \"${IIS_API_SERVER_URL}/api/v1/applications\" -H \"Authorization: Bearer ${token}\" -H \"Content-Type: application/x-www-form-urlencoded\" --data-urlencode \"application_pool=${appPoolName}\" --data-urlencode \"physical_path=${physicalPath}\" --data-urlencode \"virtual_path=/${appName}\"")
+}
+
+def getApplicationPoolState(appPoolName, token) {
+    appPoolName = appPoolName.replace(' ', '%20')
+    def response = sh(script: "curl -L -X GET \"${IIS_API_SERVER_URL}/api/v1/apppools/${appPoolName}/state\"  -H \"Authorization: Bearer ${token}\"", returnStdout: true)
+    def responseObj = readJSON text: response
+    return responseObj.state
+}
+
+def setApplicationPoolState(appPoolName, state, token) {
+    appPoolName = appPoolName.replace(' ', '%20')
+    if (state == "Start") {
+        sh(script: "curl -L -X PUT \"${IIS_API_SERVER_URL}/api/v1/apppools/${appPoolName}/state/Start\" -H \"Content-Length: 0\" -H \"Authorization: Bearer ${token}\"")
+    } else if (state == "Stop") {
+        sh(script: "curl -L -X PUT \"${IIS_API_SERVER_URL}/api/v1/apppools/${appPoolName}/state/Stop\" -H \"Content-Length: 0\" -H \"Authorization: Bearer ${token}\"")
+    }
+}
