@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "dgSpecHash": "1QFhQNNT6hZg3Hr0NSgjYDPyXSX3rrSRxgRE2ytinVgteoVOAhDhzUOPvM0mDRxOslQcK4c2QNasR/6tWeTbcQ==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\O00099\\Desktop\\exercise\\c#\\c#.csproj",
+  "expectedPackageFiles": [],
+  "logs": [
+    {
+      "code": "NU1803",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "You are running the 'restore' operation with an 'HTTP' source, 'http://atlasx.cdg.co.th:8081/repository/nuget-hosted'. Non-HTTPS access will be removed in a future version. Consider migrating to an 'HTTPS' source."
+    },
+    {
+      "code": "NU1803",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "You are running the 'restore' operation with an 'HTTP' source, 'http://atlasx.cdg.co.th:8081/repository/nuget-hosted/'. Non-HTTPS access will be removed in a future version. Consider migrating to an 'HTTPS' source."
+    }
+  ]
+}
