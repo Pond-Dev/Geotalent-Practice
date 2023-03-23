@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="initial-scale=1,maximum-scale=1,user-scalable=no"
+        />
+        <title>Geometry & Zoom</title>
+        <style>
+            html,
+            body,
+            #divView {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+                width: 100%;
+                float: left;
+            }
+
+            #divPanel {
+                width: 20%;
+                position: absolute;
+                z-index: 20px;
+                height: 100%;
+                background-color: white;
+            }
+        </style>
+
+        <link
+            rel="stylesheet"
+            href="https://js.arcgis.com/4.25/esri/css/main.css"
+        />
+        <script
+            src="https://code.jquery.com/jquery-3.6.3.min.js"
+            integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
+            crossorigin="anonymous"
+        ></script>
+        <script src="https://js.arcgis.com/4.25/"></script>
+
+        <script>
+            require([
+                "esri/Map",
+                "esri/views/MapView",
+                "esri/geometry/Point",
+                "esri/geometry/Extent",
+            ], function (Map, MapView, Point, Extent) {
+                const map = new Map({
+                    basemap: "hybrid",
+                });
+
+                const divContainerId = "divView";
+
+                const mapView = new MapView({
+                    container: divContainerId,
+                    map: map,
+                    zoom: 6,
+                    center: [100.53100560889558, 13.72248493948604], // longitude, latitude
+                });
+                $(btnZoomToPoint).click(onbtnZoomToPoint);
+                function onbtnZoomToPoint() {
+                    const txtLon = parseFloat($("#txtLon").val());
+                    const txtLat = parseFloat($("#txtLat").val());
+                    const txtZoom = parseFloat($("#txtZoom").val());
+
+                    const myPoint = new Point({
+                        longitude: txtLon,
+                        latitude: txtLat,
+                        spatialReference: {
+                            wkid: 4326,
+                        },
+                    });
+
+                    mapView.goTo({
+                        target: myPoint,
+                        zoom: txtZoom,
+                    });
+                }
+
+                $(btnZoomToExtent).click(onbtnZoomToExtent);
+                function onbtnZoomToExtent() {
+                    const txtLonMin = parseFloat($("#txtLonMin").val());
+                    const txtLonMax = parseFloat($("#txtLonMax").val());
+                    const txtLatMin = parseFloat($("#txtLatMin").val());
+                    const txtLatMax = parseFloat($("#txtLatMax").val());
+
+                    const myExtent = new Extent({
+                        xmin: txtLonMin,
+                        xmax: txtLonMax,
+                        ymin: txtLatMin,
+                        ymax: txtLatMax,
+                        spatialReference: {
+                            wkid: 4326,
+                        },
+                    });
+
+                    mapView.goTo({
+                        target: myExtent,
+                    });
+                }
+            });
+        </script>
+    </head>
+
+    <body>
+        <div id="divView"></div>
+        <div id="divPanel">
+            <h2>Zoom to Point</h2>
+            Longitude <input type="text" id="txtLon" value="100" /><br />
+            Latitude <input type="text" id="txtLat" value="13" /> <br />
+            Zoom <input type="text" id="txtZoom" value="6" /> <br />
+            <button id="btnZoomToPoint">Zoom to Point</button>
+
+            <h2>Zoom to Extent</h2>
+            Longitude(Min)
+            <input type="text" id="txtLonMin" value="100" /><br />
+            Longitude(Max)
+            <input type="text" id="txtLonMax" value="101" /><br />
+            Latitude(Min) <input type="text" id="txtLatMin" value="13" /><br />
+            Latitude(Max) <input type="text" id="txtLatMax" value="14" /> <br />
+            <button id="btnZoomToExtent">Zoom to Extent</button>
+        </div>
+    </body>
+</html>

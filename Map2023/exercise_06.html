@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="initial-scale=1,maximum-scale=1,user-scalable=no"
+        />
+        <title>Identify</title>
+        <style>
+            html,
+            body,
+            #divView {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+                width: 100%;
+                float: left;
+            }
+
+            #divPanel {
+                width: 20%;
+                position: absolute;
+                z-index: 20px;
+                height: 100%;
+                background-color: white;
+            }
+        </style>
+
+        <link
+            rel="stylesheet"
+            href="https://js.arcgis.com/4.25/esri/css/main.css"
+        />
+        <script
+            src="https://code.jquery.com/jquery-3.6.3.min.js"
+            integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
+            crossorigin="anonymous"
+        ></script>
+        <script src="https://js.arcgis.com/4.25/"></script>
+
+        <script>
+            require([
+                "esri/Map",
+                "esri/views/MapView",
+                "esri/layers/MapImageLayer",
+                "esri/rest/identify",
+                "esri/rest/support/IdentifyParameters",
+            ], function (
+                Map,
+                MapView,
+                MapImageLayer,
+                identify,
+                IdentifyParameters
+            ) {
+                $(document).ready(function () {
+                    const map = new Map({
+                        basemap: "osm",
+                    });
+
+                    const divContainerId = "divView";
+
+                    const mapView = new MapView({
+                        container: divContainerId,
+                        map: map,
+                        zoom: 13,
+                        center: [-117.23502, 34.23911],
+                    });
+
+                    const mapUrl =
+                        "https://sampleserver6.arcgisonline.com/arcgis/rest/services/MtBaldy_BaseMap/MapServer";
+                    const mapImageLayer2 = new MapImageLayer({
+                        id: "dyn1",
+                        url: mapUrl,
+                        opacity: 0.5,
+                    });
+                    map.add(mapImageLayer2);
+
+                    let params = new IdentifyParameters();
+                    params.tolerance = 10;
+                    params.layerIds = [0, 1, 2, 3, 4];
+                    params.layerOptions = "all";
+                    params.width = mapView.width;
+                    params.height = mapView.height;
+
+                    mapView.on("click", (evt) => {
+                        params.geometry = evt.mapPoint;
+                        params.mapExtent = mapView.extent;
+                        executeIdentify(params, evt.mapPoint);
+                    });
+
+                    function executeIdentify(identifyParam, mapPoint) {
+                        console.log("mapPoint", mapPoint);
+                        console.log("identifyParam", identifyParam);
+                        identify
+                            .identify(mapUrl, identifyParam)
+                            .then((response) => {
+                                const results = response.results;
+
+                                if (results.length > 0) {
+                                    // let content =
+                                    //     "<b> OBJECTID : </b> {OBJECTID}" +
+                                    //     "</br> <b>shape type :  </b> {Shape}";
+
+                                    // results[0].feature.popupTemplate = {
+                                    //     title:
+                                    //         "ObjectID" +
+                                    //         results[0].feature.attributes
+                                    //             .OBJECTID,
+                                    //     content,
+                                    // };
+
+                                    // mapView.popup.open({
+                                    //     features: [results[0].feature],
+                                    //     location: mapPoint,
+                                    // });
+
+                                    let features = results.map((resultItem) => {
+                                        console.log(resultItem);
+                                        let content =
+                                            "<b> OBJECTID : </b> {OBJECTID}" +
+                                            "</br> <b>shape type :  </b> {Shape}";
+
+                                        resultItem.feature.popupTemplate = {
+                                            title:
+                                                "ObjectID" +
+                                                resultItem.feature.attributes
+                                                    .OBJECTID,
+                                            content,
+                                        };
+
+                                        return resultItem.feature;
+                                    });
+                                    mapView.popup.open({
+                                        features,
+                                        location: mapPoint,
+                                    });
+                                }
+                            });
+                    }
+                });
+            });
+        </script>
+    </head>
+
+    <body>
+        <div id="divView"></div>
+        <div id="divPanel"></div>
+    </body>
+</html>

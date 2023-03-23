@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="initial-scale=1,maximum-scale=1,user-scalable=no"
+        />
+        <title>Graphics</title>
+        <style>
+            html,
+            body,
+            #divView {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+                width: 100%;
+                float: left;
+            }
+
+            #divPanel {
+                width: 20%;
+                position: absolute;
+                z-index: 20px;
+                height: 100%;
+                background-color: white;
+            }
+        </style>
+
+        <link
+            rel="stylesheet"
+            href="https://js.arcgis.com/4.25/esri/css/main.css"
+        />
+        <script
+            src="https://code.jquery.com/jquery-3.6.3.min.js"
+            integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
+            crossorigin="anonymous"
+        ></script>
+        <script src="https://js.arcgis.com/4.25/"></script>
+
+        <script>
+            require([
+                "esri/Map",
+                "esri/views/MapView",
+                "esri/geometry/Point",
+                "esri/symbols/SimpleMarkerSymbol",
+                "esri/layers/GraphicsLayer",
+                "esri/Graphic",
+                "esri/geometry/Polyline",
+                "esri/symbols/SimpleLineSymbol",
+                "esri/symbols/SimpleFillSymbol",
+                "esri/geometry/Polygon",
+            ], function (
+                Map,
+                MapView,
+                Point,
+                SimpleMarkerSymbol,
+                GraphicsLayer,
+                Graphic,
+                Polyline,
+                SimpleLineSymbol,
+                SimpleFillSymbol,
+                Polygon
+            ) {
+                const grpLayer = new GraphicsLayer({ id: "grpLayer" });
+                const map = new Map({
+                    basemap: "topo-vector",
+                    layers: [grpLayer],
+                });
+
+                const divContainerId = "divView";
+
+                const mapView = new MapView({
+                    container: divContainerId,
+                    map: map,
+                    zoom: 6,
+                    center: [100.53100560889558, 13.72248493948604], // longitude, latitude
+                });
+
+                let mode = null;
+                let arrPoint = [];
+
+                mapView.on("click", (evt) => {
+                    switch (mode) {
+                        case "point":
+                            const symbol = new SimpleMarkerSymbol({
+                                style: "square",
+                                color: "blue",
+                                size: "30px",
+                                outline: {
+                                    color: [255, 255, 0],
+                                    width: 3,
+                                },
+                            });
+
+                            const grp = new Graphic({
+                                geometry: evt.mapPoint,
+                                symbol,
+                            });
+                            grpLayer.add(grp);
+                            break;
+                        case "line":
+                            arrPoint.push(evt.mapPoint);
+                            break;
+                        case "polygon":
+                            arrPoint.push(evt.mapPoint);
+                            break;
+                        case "deletePoint":
+                            mapView.hitTest(evt.screenPoint).then((result) => {
+                                console.log(result.results[0].layer);
+                                // try {
+                                //     if (result.results.length) {
+                                //         const resultItem = result.results[0];
+                                //         resultItem.layer.remove(
+                                //             resultItem.graphic
+                                //         );
+                                //     }
+                                // } catch (err) {
+                                //     console.log(err);
+                                // }
+                            });
+                            break;
+                        default:
+                            break;
+                    }
+                });
+
+                mapView.on("double-click", (evt) => {
+                    if (arrPoint.length > 0) {
+                        arrPoint.push(evt.mapPoint);
+                    }
+                    let arrXY = arrPoint.map((point) => [point.x, point.y]);
+                    switch (mode) {
+                        case "line":
+                            const line = new Polyline({
+                                paths: [arrXY],
+                                spatialReference: { wkid: 102100 },
+                            });
+
+                            const lineSymbol = new SimpleLineSymbol({
+                                color: [255, 255, 0],
+                                width: 5,
+                            });
+
+                            const grpLine = new Graphic({
+                                geometry: line,
+                                symbol: lineSymbol,
+                            });
+                            grpLayer.add(grpLine);
+                            arrPoint = [];
+                            break;
+                        case "polygon":
+                            let polygon = new Polygon({
+                                rings: [arrXY],
+                                spatialReference: { wkid: 102100 },
+                            });
+                            let symbolPolygon = new SimpleFillSymbol({
+                                color: [255, 0, 0, 0.8],
+                                outline: {
+                                    color: "white",
+                                    width: 2,
+                                },
+                            });
+
+                            const grpPolygon = new Graphic({
+                                geometry: polygon,
+                                symbol: symbolPolygon,
+                            });
+                            grpLayer.add(grpPolygon);
+                            arrPoint = [];
+                            break;
+                    }
+                });
+
+                $("#btnAddPoint").click(() => {
+                    mode = "point";
+                    document.getElementById("h2Mode").innerHTML =
+                        "Mode : Point";
+                });
+
+                $("#btnAddLine").click(() => {
+                    mode = "line";
+                    document.getElementById("h2Mode").innerHTML = "Mode : Line";
+                    arrPoint = [];
+                });
+
+                $("#btnAddPolygon").click(() => {
+                    mode = "polygon";
+                    document.getElementById("h2Mode").innerHTML =
+                        "Mode : Polygon";
+                    arrPoint = [];
+                });
+
+                $("#btnClear").click(() => {
+                    grpLayer.removeAll();
+                });
+            });
+        </script>
+    </head>
+
+    <body>
+        <div id="divView"></div>
+        <div id="divPanel">
+            <h2 id="h2Mode">Mode : -</h2>
+            <button id="btnAddPoint">Add Point</button><br />
+            <button id="btnAddLine">Add Line</button><br />
+            <button id="btnAddPolygon">Add Polygon</button><br />
+            <button id="btnClear">Clear Graphics</button><br />
+        </div>
+    </body>
+</html>

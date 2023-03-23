@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="initial-scale=1,maximum-scale=1,user-scalable=no"
+        />
+        <title>Routing Service</title>
+        <style>
+            html,
+            body,
+            #divView {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+                width: 100%;
+                float: left;
+            }
+
+            #divPanel {
+                width: 20%;
+                position: absolute;
+                z-index: 20px;
+                height: 100%;
+                padding: 20px;
+                background-color: white;
+            }
+
+            .loading {
+                z-index: 2000;
+                background: White url("https://i.imgur.com/TwGVOZM.gif")
+                    no-repeat fixed center center;
+                width: 100%;
+                height: 100%;
+                position: fixed;
+                top: 0px;
+                left: 0px;
+                filter: alpha(opacity=50);
+                opacity: 0.5;
+            }
+        </style>
+
+        <link
+            rel="stylesheet"
+            href="https://js.arcgis.com/4.25/esri/css/main.css"
+        />
+        <script
+            src="https://code.jquery.com/jquery-3.6.3.min.js"
+            integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
+            crossorigin="anonymous"
+        ></script>
+        <script src="https://js.arcgis.com/4.25/"></script>
+
+        <script>
+            require([
+                "esri/Map",
+                "esri/views/MapView",
+                "esri/Graphic",
+                "esri/layers/GraphicsLayer",
+                "esri/geometry/Polyline",
+                "esri/symbols/SimpleMarkerSymbol",
+                "esri/symbols/SimpleLineSymbol",
+            ], function (
+                Map,
+                MapView,
+                Graphic,
+                GraphicsLayer,
+                Polyline,
+                SimpleMarkerSymbol,
+                SimpleLineSymbol
+            ) {
+                let pointSymbol = {
+                    type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+                    style: "circle",
+                    color: [0, 255, 0, 0.75],
+                    size: "32px", // pixels
+                    outline: {
+                        // autocasts as new SimpleLineSymbol()
+                        color: [255, 255, 0],
+                        width: 3, // points
+                    },
+                };
+
+                let lineSymbol = {
+                    type: "simple-line", // autocasts as new SimpleLineSymbol()
+                    color: "red",
+                    width: "3px",
+                };
+
+                const grpLayerPoint = new GraphicsLayer({ id: "grpPointLyr" });
+                const grpLayerLine = new GraphicsLayer({ id: "grpLineLyr" });
+                const map = new Map({
+                    basemap: "topo-vector",
+                    layers: [grpLayerLine, grpLayerPoint],
+                });
+
+                const mapView = new MapView({
+                    container: "divView",
+                    map: map,
+                    zoom: 15,
+                    center: [100.53100560889558, 13.72248493948604], // longitude, latitude
+                });
+
+                mapView.on("click", (evt) => {
+                    const { mapPoint } = evt;
+                    grpLayerPoint.add(
+                        new Graphic({ symbol: pointSymbol, geometry: mapPoint })
+                    );
+                });
+
+                $("#btnAddPolygon").click(() => {
+                    if (grpLayerPoint.graphics.items.length > 0) {
+                        grpLayerLine.removeAll();
+                        let arrStops = grpLayerPoint.graphics.items.map(
+                            (grp, index) => {
+                                return {
+                                    name: "location_" + index,
+                                    lat: grp.geometry.latitude,
+                                    lon: grp.geometry.longitude,
+                                };
+                            }
+                        );
+                        const data = {
+                            key: "Gg(pf3o5MuzbwyFYatNHxN)Fcre7uPYTlTmeMpkztdielgfLJVUtBsp4VLwzsQEmze4SBgXp0QpA2cUx(fq1Ia0=====2",
+                            stops: JSON.stringify(arrStops),
+                            returnedAGSResult: true,
+                            language: "L",
+                            directionsLanguage: "EN",
+                            outSR: 4326,
+                            useTimeWindows: false,
+                            returnedRouteDetail: true,
+                            returnedAGSResult: true,
+                        };
+
+                        const paramUrl = new URLSearchParams(data).toString();
+                        const routeServiceUrl =
+                            "https://gdev.geotalent.co.th/pttlandlog/arcgis/proxy.ashx?https://api.nostramap.com/Service/V2/Network/Route?";
+                        showLoading();
+                        fetch(routeServiceUrl + paramUrl, {
+                            method: "GET",
+                        })
+                            .then((response) => response.json())
+                            .then((routeResult) => {
+                                drawRoute(routeResult.results.routes);
+                            })
+                            .finally(() => {
+                                hideLoading();
+                            });
+                    }
+                });
+
+                function drawRoute(routes) {
+                    const polyline = new Polyline({
+                        paths: routes.features[0].geometry.paths,
+                    });
+
+                    grpLayerLine.add(
+                        new Graphic({
+                            symbol: lineSymbol,
+                            geometry: polyline,
+                        })
+                    );
+                }
+
+                $("#btnClear").click(() => {
+                    grpLayerPoint.removeAll();
+                    grpLayerLine.removeAll();
+                });
+            });
+
+            function showLoading() {
+                document.getElementById("loadingFrame").style.display = "block";
+            }
+
+            function hideLoading() {
+                document.getElementById("loadingFrame").style.display = "none";
+            }
+        </script>
+    </head>
+
+    <body>
+        <div id="divView"></div>
+        <div id="divPanel">
+            <button id="btnAddPolygon">Draw Route</button><br />
+            <button id="btnClear">Clear All Graphic</button><br />
+        </div>
+        <div id="loadingFrame" class="loading" style="display: none"></div>
+    </body>
+</html>

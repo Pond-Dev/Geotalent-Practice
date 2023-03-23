@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="initial-scale=1,maximum-scale=1,user-scalable=no"
+        />
+        <title>Map & View</title>
+        <style>
+            html,
+            body,
+            #divView {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+                width: 100%;
+            }
+
+            #btnSwitch {
+                z-index: 100;
+                position: absolute;
+                left: 100px;
+                top: 10px;
+                width: 50px;
+                height: 50px;
+                font-weight: bold;
+            }
+        </style>
+
+        <link
+            rel="stylesheet"
+            href="https://js.arcgis.com/4.25/esri/css/main.css"
+        />
+        <script
+            src="https://code.jquery.com/jquery-3.6.3.min.js"
+            integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
+            crossorigin="anonymous"
+        ></script>
+        <script src="https://js.arcgis.com/4.25/"></script>
+        <script>
+            require([
+                "esri/Map",
+                "esri/views/MapView",
+                "esri/views/SceneView",
+            ], (Map, MapView, SceneView) => {
+                const map = new Map({ basemap: "topo-vector" });
+                const divContainerID = "divView";
+
+                // initial 2D map
+                const mapView = new MapView({
+                    map: map,
+                    container: divContainerID,
+                    zoom: 6,
+                    center: [100.53100560889558, 13.72248493948604], // longitude, latitude
+                });
+
+                // initial 3D map
+                const sceneView = new SceneView({
+                    map: map,
+                    container: null,
+                });
+
+                let is2D = true;
+                let activeView = mapView;
+
+                $(btnSwitch).click(switchView);
+                function switchView() {
+                    if (is2D) {
+                        sceneView.viewpoint = activeView.viewpoint.clone();
+                        activeView.container = null;
+                        activeView = sceneView;
+                        btnSwitch.value = "3D";
+                    } else {
+                        mapView.viewpoint = activeView.viewpoint.clone();
+                        activeView.container = null;
+                        activeView = mapView;
+                        btnSwitch.value = "2D";
+                    }
+                    activeView.container = divContainerID;
+                    is2D = !is2D;
+                }
+            });
+        </script>
+    </head>
+
+    <body>
+        <div id="divView">
+            <input id="btnSwitch" type="button" value="2D" />
+        </div>
+    </body>
+</html>

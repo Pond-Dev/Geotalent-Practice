@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="initial-scale=1,maximum-scale=1,user-scalable=no"
+        />
+        <title>Edting</title>
+        <style>
+            html,
+            body,
+            #divView {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+                width: 100%;
+                float: left;
+            }
+
+            #divPanel {
+                width: 20%;
+                position: absolute;
+                z-index: 20px;
+                height: 100%;
+                background-color: white;
+                padding: 20px;
+            }
+        </style>
+
+        <link
+            rel="stylesheet"
+            href="https://js.arcgis.com/4.25/esri/css/main.css"
+        />
+        <script
+            src="https://code.jquery.com/jquery-3.6.3.min.js"
+            integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
+            crossorigin="anonymous"
+        ></script>
+        <script src="https://js.arcgis.com/4.25/"></script>
+
+        <script>
+            require([
+                "esri/Map",
+                "esri/views/MapView",
+                "esri/layers/FeatureLayer",
+                "esri/layers/GraphicsLayer",
+                "esri/geometry/Polygon",
+                "esri/symbols/SimpleFillSymbol",
+                "esri/Graphic",
+                "esri/widgets/Sketch/SketchViewModel",
+            ], function (
+                Map,
+                MapView,
+                FeatureLayer,
+                GraphicsLayer,
+                Polygon,
+                SimpleFillSymbol,
+                Graphic,
+                SketchViewModel
+            ) {
+                const map = new Map({
+                    basemap: "streets-vector",
+                });
+
+                const divContainerId = "divView";
+
+                let sketchViewModel = null;
+
+                const mapView = new MapView({
+                    container: divContainerId,
+                    map: map,
+                    zoom: 13,
+                    center: [-83.244, 42.581], //[100.53100560889558,13.72248493948604] // longitude, latitude
+                });
+
+                const polygonLayer = new FeatureLayer({
+                    id: "polygonLyr",
+                    url: "https://sampleserver6.arcgisonline.com/arcgis/rest/services/Military/FeatureServer/9",
+                    outFields: ["*"],
+                });
+
+                const grpLayer = new GraphicsLayer({ id: "grpLayer" });
+                map.add(polygonLayer);
+                map.add(grpLayer);
+
+                const polygonSymbol = new SimpleFillSymbol({
+                    color: "rgba(138,43,226, 0.8)",
+                    style: "solid",
+                    outline: {
+                        color: "white",
+                        width: 1,
+                    },
+                });
+
+                mapView.when(() => {
+                    sketchViewModel = new SketchViewModel({
+                        view: mapView,
+                        layer: grpLayer,
+                        polygonSymbol,
+                    });
+
+                    sketchViewModel.on("create", addGraphic);
+                    sketchViewModel.on("update", updateGraphic);
+                });
+
+                let editGraphic = null;
+                mapView.on("click", (event) => {
+                    mapView.hitTest(event).then((response) => {
+                        let results = response.results;
+
+                        const findResultItems = results.find(
+                            (item) => item.layer.id === "polygonLyr"
+                        );
+
+                        if (findResultItems) {
+                            let editGraphic = findResultItems.graphic;
+                            editGraphic.symbol = polygonSymbol;
+
+                            grpLayer.add(editGraphic);
+                            sketchViewModel.update([editGraphic]);
+                        }
+                    });
+                });
+
+                mapView.on("double-click", (event) => {
+                    mapView.hitTest(event).then((response) => {
+                        let results = response.results;
+
+                        const findResultItems = results.find(
+                            (item) => item.layer.id === "polygonLyr"
+                        );
+
+                        if (findResultItems) {
+                            polygonLayer.applyEdits({
+                                deleteFeatures: [findResultItems.graphic],
+                            });
+                        }
+                    });
+                });
+
+                function addGraphic(evt) {
+                    console.log(evt);
+                    if (evt.state === "complete") {
+                        const graphic = new Graphic({
+                            geometry: evt.graphic.geometry,
+                        });
+
+                        polygonLayer.applyEdits({
+                            addFeatures: [graphic],
+                        });
+
+                        grpLayer.removeAll();
+                    }
+                }
+
+                function updateGraphic(evt) {
+                    if (evt.state === "complete") {
+                        const graphic = new Graphic({
+                            geometry: evt.graphics[0].geometry,
+                            attributes: evt.graphics[0].attributes,
+                        });
+
+                        polygonLayer.applyEdits({
+                            updateFeatures: [graphic],
+                        });
+
+                        grpLayer.removeAll();
+                    }
+                }
+
+                $("#btnAddPolygon").click(() => {
+                    sketchViewModel.create("polygon");
+                });
+            });
+        </script>
+    </head>
+
+    <body>
+        <div id="divView"></div>
+        <div id="divPanel">
+            <button id="btnAddPolygon">Draw Polygon(Free Hand)</button><br />
+        </div>
+    </body>
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="initial-scale=1,maximum-scale=1,user-scalable=no"
+        />
+        <title>Secure Map (Token)</title>
+        <style>
+            html,
+            body,
+            #divView {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+                width: 100%;
+                float: left;
+            }
+        </style>
+
+        <link
+            rel="stylesheet"
+            href="https://js.arcgis.com/4.25/esri/css/main.css"
+        />
+        <script
+            src="https://code.jquery.com/jquery-3.6.3.min.js"
+            integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
+            crossorigin="anonymous"
+        ></script>
+        <script src="https://js.arcgis.com/4.25/"></script>
+
+        <script>
+            require([
+                "esri/Map",
+                "esri/views/MapView",
+                "esri/layers/TileLayer",
+                "esri/layers/MapImageLayer",
+                "esri/identity/IdentityManager",
+                "esri/identity/ServerInfo",
+            ], function (
+                Map,
+                MapView,
+                TileLayer,
+                MapImageLayer,
+                IdentityManager,
+                ServerInfo
+            ) {
+                registerMapToken().then(() => {
+                    const divContainerId = "divView";
+                    const basemapLayer = new TileLayer({
+                        id: "basemap01",
+                        url: "https://apptest.cdg.co.th/arcgis/rest/services/NOSTRA_CACHE_DoubleLine/MapServer",
+                    });
+
+                    const subLayerConfig = [];
+
+                    for (let i = 0; i < 9; i++) {
+                        subLayerConfig.push({
+                            id: i,
+                            visible: true,
+                        });
+                    }
+                    const mapPipeLayer = new MapImageLayer({
+                        id: "mapPipe",
+                        url: "https://apptest.cdg.co.th/arcgis/rest/services/PTT_LIS2/PTTLIS_PIPE/MapServer",
+                        sublayers: subLayerConfig,
+                    });
+                    const map = new Map({
+                        basemap: {
+                            baseLayers: [basemapLayer],
+                        },
+                        layers: [mapPipeLayer],
+                    });
+
+                    const mapView = new MapView({
+                        container: divContainerId,
+                        map: map,
+                        zoom: 8,
+                        center: [100.53100560889558, 13.72248493948604], // longitude, latitude
+                    });
+                });
+
+                function registerMapToken() {
+                    const mapUrl = "https://apptest.cdg.co.th/arcgis";
+                    const username = "pttlisuser";
+                    const password = "pttlisuser2017";
+
+                    const promiseRegisterToken = new Promise((resolved) => {
+                        const serverInfo = new ServerInfo({
+                            tokenServiceUrl: mapUrl + "/tokens/generateToken",
+                            hasServer: true,
+                            shortLivedTokenValidity: 60,
+                        });
+
+                        IdentityManager.generateToken(serverInfo, {
+                            username: username,
+                            password: password,
+                        }).then((response) => {
+                            IdentityManager.registerToken({
+                                server: mapUrl + "/rest/services",
+                                token: response.token,
+                                expires: response.expires,
+                            });
+                        });
+
+                        resolved(null);
+                    });
+
+                    return promiseRegisterToken;
+                }
+            });
+        </script>
+    </head>
+
+    <body>
+        <div id="divView"></div>
+    </body>
+</html>

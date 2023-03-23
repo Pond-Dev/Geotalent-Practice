@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="initial-scale=1,maximum-scale=1,user-scalable=no"
+        />
+        <title>Layers</title>
+        <style>
+            html,
+            body,
+            #divView {
+                padding: 0;
+                margin: 0;
+                height: 100%;
+                width: 100%;
+                float: left;
+            }
+
+            #divPanel {
+                width: 20%;
+                position: absolute;
+                z-index: 20px;
+                height: 100%;
+                background-color: white;
+            }
+        </style>
+
+        <link
+            rel="stylesheet"
+            href="https://js.arcgis.com/4.25/esri/css/main.css"
+        />
+        <script
+            src="https://code.jquery.com/jquery-3.6.3.min.js"
+            integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
+            crossorigin="anonymous"
+        ></script>
+        <script src="https://js.arcgis.com/4.25/"></script>
+
+        <script>
+            require([
+                "esri/Map",
+                "esri/views/MapView",
+                "esri/layers/TileLayer",
+                "esri/layers/MapImageLayer",
+            ], function (Map, MapView, TileLayer, MapImageLayer) {
+                const TileLayer1 = new TileLayer({
+                    id: "tile1",
+                    url: "https://gis2.nbtc.go.th/arcgis/rest/services/BASEMAPS_CACHE/MapServer",
+                });
+                const mapImageLayer1 = new MapImageLayer({
+                    id: "imageLayer1",
+                    url: "https://gis.forest.go.th/arcgis/rest/services/RFD_BASEMAP/MapServer",
+                    sublayers: [
+                        {
+                            id: 8,
+                            visible: true,
+                        },
+                    ],
+                });
+
+                // case 1
+                const map = new Map({
+                    basemap: "streets-vector",
+                    layers: [TileLayer1, mapImageLayer1],
+                });
+
+                // case 2
+                // const map = new Map({
+                //     basemap: "streets-vector",
+                // });
+                // map.add(TileLayer1)
+                // map.add(mapImageLayer1)
+
+                // case 3
+                // const map = new Map({
+                //     basemap: "streets-vector",
+                // });
+                // map.addMany([TileLayer1, mapImageLayer1])
+
+                const divContainerId = "divView";
+
+                const mapView = new MapView({
+                    container: divContainerId,
+                    map: map,
+                    zoom: 6,
+                    center: [100.53100560889558, 13.72248493948604], // longitude, latitude
+                });
+
+                $(clickTile1).click(onClickTile);
+                function onClickTile() {
+                    const layer = map.findLayerById("tile1");
+                    layer.visible = clickTile1.checked;
+                }
+
+                $(clickDynamic1).click(onClickDynamic1);
+                function onClickDynamic1() {
+                    mapImageLayer1.visible = clickDynamic1.checked;
+                }
+            });
+        </script>
+    </head>
+
+    <body>
+        <div id="divView"></div>
+        <div id="divPanel">
+            <div id="divLayerList">
+                <input id="clickTile1" type="checkbox" checked="checked" />Tile1
+                <br />
+                <input
+                    id="clickDynamic1"
+                    type="checkbox"
+                    checked="checked"
+                />Dynamic1
+                <br />
+            </div>
+        </div>
+    </body>
+</html>
